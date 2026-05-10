@@ -11,7 +11,6 @@ services:
       - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./docker/db/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U postgres']
       interval: 10s
@@ -80,6 +79,73 @@ services:
       - ./docker/grafana/provisioning:/etc/grafana/provisioning
     depends_on:
       - prometheus
+
+    
+    # ─── API Gateway ──────────────────────────────────────────
+  api-gateway:
+    build:
+      context: .
+      dockerfile: apps/api-gateway/Dockerfile
+    container_name: notification_api_gateway
+    ports:
+      - '3000:3000'
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      db-migrate:                   
+        condition: service_completed_successfully  
+    restart: unless-stopped
+
+  # ─── Email Worker ─────────────────────────────────────────
+  email-worker:
+    build:
+      context: .
+      dockerfile: apps/email-worker/Dockerfile
+    container_name: notification_email_worker
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      db-migrate:                        
+        condition: service_completed_successfully  
+    restart: unless-stopped
+
+  # ─── SMS Worker ───────────────────────────────────────────
+  sms-worker:
+    build:
+      context: .
+      dockerfile: apps/sms-worker/Dockerfile
+    container_name: notification_sms_worker
+    env_file: .env
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      db-migrate:                        
+        condition: service_completed_successfully  
+    restart: unless-stopped
+
+  db-migrate:
+    build:
+      context: .
+      dockerfile: db/Dockerfile
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: on-failure
+    healthcheck:
+      test: ["CMD-SHELL", "exit 0"]
+      interval: 5s
+      timeout: 5s
+      retries: 1
+      start_period: 10s
 
 volumes:
   postgres_data:

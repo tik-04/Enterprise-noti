@@ -4,7 +4,7 @@ import {
   Injectable,
   Logger,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectRepository } from '@nestjs/typeorm';  
 import { ClientProxy } from '@nestjs/microservices';
 import { Repository } from 'typeorm';
 import { NotificationEntity } from '@app/shared/entities/Notification.entity';
@@ -52,7 +52,7 @@ export class ApiGatewayService {
       // sync กลับเข้า Redis ด้วย
       await this.idempotency.lock(dto.idempotencyKey, existing.id);
       return { notificationId: existing.id, status: 'already_accepted' };
-    }
+    } 
 
     // 2. INSERT DB สถานะ PENDING
     const notification = this.notificationRepo.create({
@@ -106,7 +106,7 @@ export class ApiGatewayService {
       recipient: notification.recipient,
       attempts: notification.attempts,
       sentAt: notification.sentAt,
-      createdAt: notification.createdAt,
+      createdAt: notification.createdAt, 
     };
   }
 }

@@ -9,29 +9,38 @@ import { RedisIdempotencyService } from './redis-idempotency.service';
 import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
 import Redis from 'ioredis';
 import { makeCounterProvider, makeGaugeProvider, makeHistogramProvider, PrometheusModule } from '@willsoto/nestjs-prometheus';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
-    ConfigModule.forRoot(),
+    ConfigModule.forRoot({ isGlobal: true }),
     // PostgreSQL
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST ?? 'localhost',
-      port: 5432,
+      port: +(process.env.DB_PORT ?? 5432),
       username: process.env.POSTGRES_USER,
       password: process.env.POSTGRES_PASSWORD,
       database: process.env.POSTGRES_DB,
       entities: [NotificationEntity],
-      synchronize: false, // ใช้ migration แทน
+      synchronize: false,
+      migrations: ['dist/migrations/*.js'],
+      migrationsRun: false, 
     }),
     TypeOrmModule.forFeature([NotificationEntity]),
 
-    ThrottlerModule.forRoot({
-      throttlers: [{ ttl: 60000, limit: 100 }],
-      storage: new ThrottlerStorageRedisService(
-        new Redis({ host: 'localhost', port: 6379 })
-      ),
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (config: ConfigService) => ({
+        throttlers: [{ ttl: 60000, limit: 100 }],
+        storage: new ThrottlerStorageRedisService(
+          new Redis({
+            host: config.get('REDIS_HOST', 'localhost'),
+            port: config.get<number>('REDIS_PORT', 6379),
+          })
+        ),
+      }),
+      inject: [ConfigService],
     }),
 
     // RabbitMQ Publisher
