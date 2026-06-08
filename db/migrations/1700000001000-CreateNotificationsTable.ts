@@ -1,7 +1,7 @@
 // migrations/1700000001-CreateNotificationsTable.ts
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class CreateNotificationsTable1700000001 implements MigrationInterface {
+export class CreateNotificationsTable1700000001000 implements MigrationInterface {
   async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
     CREATE TABLE IF NOT EXISTS notifications (

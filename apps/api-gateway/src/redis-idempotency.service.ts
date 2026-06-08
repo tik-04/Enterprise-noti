@@ -6,7 +6,10 @@ export class RedisIdempotencyService implements OnModuleInit, OnModuleDestroy {
   private client!: Redis;
 
   onModuleInit() {
-    this.client = new Redis({ host: 'localhost', port: 6379 });
+    this.client = new Redis({
+      host: process.env.REDIS_HOST ?? 'localhost',
+      port: +(process.env.REDIS_PORT ?? 6379),
+    });
   }
 
   onModuleDestroy() {
